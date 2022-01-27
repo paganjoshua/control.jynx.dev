@@ -1,0 +1,48 @@
+---
+- name: Copy SSH Kes
+  copy:
+    src: "{{ item[0].src }}"
+    dest: "/home/{{ item[1] }}/.ssh/{{ item[0].dest }}"
+    mode: preserve
+    owner: "{{ item[1] }}"
+    group: "{{ item[1] }}"
+    setype: ssh_home_t
+  with_nested:
+    - "{{ ssh_key_files }}"
+    - "{{ users }}"
+  no_log: true
+
+- name: Clone Repositories
+  tags: git
+  # Becoming root causes issues with key_file
+  become: false
+  git:
+    repo: "{{ item[1].repo }}"
+    dest: "/home/{{ item[0] }}{{ item[1].dest }}"
+    clone: yes 
+    version: "main"
+    key_file: "/home/{{ item[0] }}/.ssh/github"
+      # TODO automate securely gathering host key
+      # i.e. do not set 'StrictHostKeyChecking=no'
+      #accept_hostkey: yes
+    ssh_opts: "-o ForwardAgent=yes -o StrictHostKeyChecking=yes"
+  with_nested: 
+    - "{{ users }}"
+    - "{{ github }}"
+  ignore_errors: true
+  register: clone
+
+# TODO is this necessary anymore?
+- name: Chown Working Dir
+  tags: git
+  file:
+    state: directory
+    setype: user_home_t
+    owner: "{{ item }}"
+    group: "{{ item }}"
+    path: "/home/{{ item }}/jynx"
+    recurse: true
+  loop: 
+    "{{ users }}"
+  when: clone.changed
+  

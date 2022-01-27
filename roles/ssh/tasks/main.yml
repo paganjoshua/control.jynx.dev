@@ -1,0 +1,22 @@
+---
+  - name: Copy sshd_config
+    copy:
+      src: sshd_config
+      dest: /etc/ssh/sshd_config
+
+  - name: Add Allowed Users
+    blockinfile:
+      create: true
+      owner: root
+      group: root
+      mode: 0664
+      path: /etc/ssh/sshd_config.d/allowed_users.conf
+      block: AllowUsers {{ ssh_users }}
+    notify: Reload sshd
+    no_log: true
+
+  - name: Start sshd
+    service:
+      name: sshd
+      enabled: true
+      state: started

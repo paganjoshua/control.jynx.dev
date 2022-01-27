@@ -1,0 +1,19 @@
+---
+  - name: Login to Docker Registry
+    tags: deploy
+    community.docker.docker_login:
+      username: "{{ docker_hub_username }}"
+      password: "{{ docker_hub_password }}"
+    no_log: true
+
+  - name: Rebuild Container With New Image
+    tags: deploy
+    community.docker.docker_container:
+      name: "{{ item.value.name }}"
+      image: "{{ item.value.image }}"
+      published_ports: "{{ item.value.ports }}"
+      pull: true
+      state: started
+      container_default_behavior: no_defaults
+    with_dict:
+      "{{ containers }}"

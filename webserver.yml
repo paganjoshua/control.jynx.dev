@@ -1,0 +1,17 @@
+---
+- hosts: webserver
+
+  pre_tasks:
+
+    - name: Update Repository Index
+      dnf:
+        update_cache: true
+        update_only: true
+
+- import_playbook: common.yml 
+  vars: 
+    CURRENT_HOSTS: webserver
+
+- hosts: webserver
+  roles:
+    - deploy
